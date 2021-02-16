@@ -8,14 +8,11 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import numpy as np
 
+###Transform input range to -1~+1
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
-
-batch_size = 100
-trainset = CIFAR10('.', train=True, transform=transform, download=True)
-trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
 
 def imshow(img):
     img = torchvision.utils.make_grid(img)
@@ -31,7 +28,6 @@ class MakeFrom(nn.Module):
         self.model = s
     def forward(self, x):
         return self.model(x)
-
 
 def train(netD, netG, batch_size, zsize, epochs, trainloader):
     losses_netD = []
@@ -91,9 +87,9 @@ def train(netD, netG, batch_size, zsize, epochs, trainloader):
             if epoch == 1:
                 if count < 100 and count % 10 ==0:
                     stat1 = f'epoch: {epoch:02d}, batch: {count}\t'
-                    stat2 = f'  lossD: {loss_netD:.4f}(real: {loss_real:.4f}, fake: {loss_fake1:.4f}),'
-                    stat3 = f'lossG: {loss_netG:.4f},  D(x): {output_real.mean():.4f},'
-                    stat4 = f'D(G(z)): {output_fake1.mean():.4f}, {output_fake2.mean():.4f}'
+                    stat2 = f'  lossD: {loss_netD:.4f}(real: {loss_real:.4f}, fake: {loss_fake1:.4f}),'#Dのロス（本物，偽物）
+                    stat3 = f'lossG: {loss_netG:.4f},  D(x): {output_real.mean():.4f},'#Gのロス，本物をDに入れたときの出力
+                    stat4 = f'D(G(z)): {output_fake1.mean():.4f}, {output_fake2.mean():.4f}'#偽物をDに入れたときの出力（D学習時，G学習時）
                     print(stat1, stat2, stat3, stat4)
 
             if count % 100 == 0:  # 1エポックの中で100回ごとに学習の状況を記録
@@ -126,6 +122,7 @@ def weights_init(m):
         nn.init.normal_(m.weight.data, 0.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
 
+###Discriminator
 discriminator = nn.Sequential(
     nn.Conv2d(3, 64, 4, 2, 1, bias=False),
     nn.LeakyReLU(0.2, inplace=True),
@@ -139,6 +136,7 @@ discriminator = nn.Sequential(
     nn.Sigmoid()
 )
 
+###Generator
 feature_maps = 64
 zsize = 100
 generator = nn.Sequential(
@@ -160,5 +158,11 @@ netG = MakeFrom(generator)
 netD.apply(weights_init)
 netG.apply(weights_init)
 
+###Training data
+batch_size = 100
+trainset = CIFAR10('.', train=True, transform=transform, download=True)
+trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
+
+###Training
 EPOCHS = 80
 losses, outs, nets = train(netD, netG, batch_size, zsize, EPOCHS, trainloader)
