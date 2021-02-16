@@ -159,3 +159,6 @@ netD = MakeFrom(discriminator)
 netG = MakeFrom(generator)
 netD.apply(weights_init)
 netG.apply(weights_init)
+
+EPOCHS = 80
+losses, outs, nets = train(netD, netG, batch_size, zsize, EPOCHS, trainloader)
